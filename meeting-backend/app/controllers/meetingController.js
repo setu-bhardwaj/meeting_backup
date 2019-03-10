@@ -25,7 +25,7 @@ let addEvent = (req, res) => {
         var today = Date.now()
         let newEvent = new EventModel({
 
-            eventId: shortId.generate(),
+            eventId: shortid.generate(),
             userId: req.body.userId,
             title: req.body.title,
             description: req.body.description,
@@ -33,7 +33,7 @@ let addEvent = (req, res) => {
             endAt: req.body.endAt,
             where: req.body.where,
             color: req.body.color,
-            createdAt: today,
+            createdAt: time.now(),
             createdBy: req.body.createdBy,
             lastModified :req.body.lastModified
 
@@ -92,6 +92,7 @@ let getSingleEvent = (req,res) =>{
     EventModel.find({eventId:req.params.eventId})
     .lean()
     .exec((err,result)=>{
+       // console.log(eventId)
         if(err){
             let apiResponse = response.generate(true,'error occured in finding',500,null)
             res.send(apiResponse)
@@ -108,8 +109,10 @@ let getSingleEvent = (req,res) =>{
 
 let getAllEventsByDate = (req,res) =>{
 
+console.log(req.body)
+EventModel.find({  $or:[ {userId:req.body.userId,startAt:req.body.startAt} , {userId:req.body.userId,endAt:req.body.endAt} ]   })
 
-    EventModel.find({  $or:[ {userId:req.body.userId,startAt:new Date(req.body.startAt)} , {userId:req.body.userId,endAt:new Date(req.body.endAt)} ]   })
+   // EventModel.find({  $or:[ {userId:req.body.userId,startAt:new Date(req.body.startAt)} , {userId:req.body.userId,endAt:new Date(req.body.endAt)} ]   })
     .lean()
     .exec((err,result)=>{
         if(err){
@@ -130,10 +133,11 @@ let getAllEventsByDate = (req,res) =>{
         let options = req.body
         EventModel.update({eventId:req.params.eventId}, options, { multi: true })
         .exec((err,result)=>{
+            console.log(result)
             if(err){
                 let apiResponse = response.generate(true,'error occured in updating',500,null)
                 res.send(apiResponse);
-            }else if(check.isEmpty(result)){
+            }else if(result.n==0){
                 let apiResponse = response.generate(true,'No event Found',null);
                 res.send(apiResponse)
             }else{
@@ -151,7 +155,7 @@ let getAllEventsByDate = (req,res) =>{
             if(err){
                 let apiResponse = response.generate(true,'error while deleting',500,null);
                 res.send(apiResponse);
-            }else if(check.isEmpty(result)){
+            }else if(result.n==0){
                 let apiResponse = response.generate(true,'No event found',404, null);
                 res.send(apiResponse);
             }else{
