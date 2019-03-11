@@ -16,7 +16,7 @@ const nodeMailer = require('./nodemailerLib')
 //const redisLib = require("./redisLib.js");
 
 
-let alertEvent = {};
+let arr = []
 
 let setServer = (server) => {
 
@@ -92,11 +92,34 @@ let setServer = (server) => {
 
         // }) // end of listening set-user event
 
+        socket.emit('sendUserId','hi');
+
+        socket.on('userId',(userId)=>{
+                
+            let data = {
+                userId:userId,
+                socketid:socket.id
+            }
+
+            arr.push(data);
+
+                    }) //  end of userId
+
+
         socket.on('sendMail',(mailDetails)=>{
             console.log(mailDetails)
             nodeMailer.sendMail(mailDetails)
         }) //  end of send mail
 
+        socket.on('newEvent',(details)=>{
+                
+            for(let each of arr){
+                if(each.userId == details.userId){
+                    myIo.to(each.socketid).emit('newEventAdded',details);
+                }
+            }        
+
+            }) //  end of new event
 
 
         socket.on('disconnect', () => {
@@ -105,10 +128,40 @@ let setServer = (server) => {
             // unsubscribe the user from his own channel
 
             console.log("user is disconnected");
-            // console.log(socket.connectorName);
             console.log(socket.userId);
+            // console.log(socket.connectorName);
+            for(let each of arr){
+                if(each.socketid == socket.id){
+                    let index = arr.indexOf(each)
+                    console.log(index);
+                    arr.splice(index,1)
+                    
+                }
+            }
+         
 
         }) // end of on disconnect
+
+        socket.on('eventEdited',(details)=>{
+
+            for(let each of arr){
+                if(each.userId == details.userId){
+                    myIo.to(each.socketid).emit('eventEdited',details);
+                }
+            }
+
+        }) // end of edit event
+        
+        socket.on('eventDeleted',(details)=>{
+            
+            for(let each of arr){
+                if(each.userId == details.userId){
+                    myIo.to(each.socketid).emit('eventDeleted',details);
+                }
+            }
+
+        }) // end of event deleted
+
 
         // var removeIndex = allOnlineUsers.map(function (user) { return user.userId; }).indexOf(socket.userId);
         // allOnlineUsers.splice(removeIndex, 1)
@@ -175,57 +228,7 @@ let setServer = (server) => {
 
 // database operations are kept outside of socket.io code.
 
-// saving friend to database.
 
-eventEmitter.on('save-event', (req, res) => {
-
-    console.log('save-event', req);
-    let newFriend = new Friend({
-        id: shortid.generate(),
-        requestedById: req.body.requestedById,
-        requestedToId: req.body.requestedToId,
-        requestedByName: req.body.requestedByName,
-        requestedToName: req.body.requestedToName,
-        status: req.body.status
-
-    })
-
-    newFriend.save((err, result) => {
-        if (err) {
-            logger.error(err.message, 'socket event: save friend', 10)
-            let apiResponse = response.generate(true, 'Failed to save', 500, null)
-            //res.send(apiResponse)
-        } else if (check.isEmpty(result)) {
-            let apiResponse = response.generate(true, 'No Result Found', 404, null)
-            console.log(apiResponse);
-
-        } else {
-            let apiResponse = response.generate(false, 'Friend Added successfully', 200, null)
-            console.log(apiResponse);
-        }
-    })
-
-})
-
-eventEmitter.on('friendship', (req, res) => {
-
-    let options = req
-    Friend.update({ id: req.id }, options)
-        .exec((err, result) => {
-            if (err) {
-                let apiResponse = response.generate(true, 'Failed to update friends', 500, null)
-                //res.send(apiResponse)
-            } else if (check.isEmpty(result)) {
-                let apiResponse = response.generate(true, 'No Result Found', 404, null)
-                //res.send(apiResponse)
-            } else {
-                // console.log('result', result);
-                let apiResponse = response.generate(false, 'Friends Details Updated Successfully', 200, result)
-                //res.send(apiResponse)
-                console.log('Added friend', apiResponse);
-            }
-        })
-})
 // eventEmitter.on('save-chat', (data) => {
 
 //     // let today = Date.now();

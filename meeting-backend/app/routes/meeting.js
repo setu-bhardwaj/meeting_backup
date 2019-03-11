@@ -19,7 +19,7 @@ let setRouter = (app) =>{
 
     app.get(`${baseUrl}/getEvents/event/:eventId`,auth.isAuthorized,meetingController.getSingleEvent)
 
-    app.get(`${baseUrl}/getEvents/date/byDate`,auth.isAuthorized,meetingController.getAllEventsByDate)
+    app.post(`${baseUrl}/getEvents/date/byDate`,auth.isAuthorized,meetingController.getAllEventsByDate)
 
     //edit
 

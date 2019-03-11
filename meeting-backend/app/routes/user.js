@@ -169,7 +169,7 @@ let setRouter = (app) => {
    */
 
 
-    app.get(`${baseUrl}/view/all`, auth.isAuthorized, userController.getAllUser);
+    app.get(`${baseUrl}/view/allUsers`, auth.isAuthorized, userController.getAllNormalUsers);
 
 
     /**
@@ -269,8 +269,8 @@ Error:
 
    */
 
-    //getting all other users apart from current user id
-    app.get(`${baseUrl}/:userId/all`, auth.isAuthorized, userController.getAllOtherUsers);
+   
+    app.get(`${baseUrl}/:userId/all`, auth.isAuthorized, userController.getAllNormalUsers);
 
     /**
      * @apiGroup UserDetails
