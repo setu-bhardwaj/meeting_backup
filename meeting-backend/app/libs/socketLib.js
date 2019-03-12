@@ -13,7 +13,7 @@ const response = require('./responseLib')
 
 const nodeMailer = require('./nodemailerLib')
 
-//const redisLib = require("./redisLib.js");
+const redisLib = require("./redisLib.js");
 
 
 let arr = []
@@ -30,51 +30,52 @@ let setServer = (server) => {
 
         console.log("on connection");
 
-        // socket.emit("verifyUser", "");
+        socket.emit("verifyUser", "");
 
         // code to verify the user and make him online
 
-        // socket.on('set-user', (authToken) => {
+      socket.on('set-user', (authToken) => {
 
-        //     console.log("set-user called")
-        //     tokenLib.verifyClaimWithoutSecret(authToken, (err, user) => {
-        //         if (err) {
-        //             socket.emit('auth-error', { status: 500, error: 'Please provide correct auth token' })
-        //         }
-        //         else {
+           console.log("set-user called")
+         tokenLib.verifyClaimWithoutSecret(authToken, (err, user) => {
+                if (err) {
+                    socket.emit('auth-error', { status: 500, error: 'Please provide correct auth token' })
+                }
+                else {
 
-        //             console.log("user is verified..setting details");
-        //             let currentUser = user.data;
-        //             // setting socket user id 
-        //             socket.userId = currentUser.userId
-        //             let fullName = `${currentUser.firstName} ${currentUser.lastName}`
-        //             let key = currentUser.userId
-        //             let value = fullName
+                    console.log("user is verified..setting details");
+                    let currentUser = user.data;
+                    // setting socket user id 
+                    socket.userId = currentUser.userId
+                    let fullName = `${currentUser.firstName} ${currentUser.lastName}`
+                    let key = currentUser.userId
+                    let value = fullName
 
-        //             let setUserOnline = redisLib.setANewOnlineUserInHash("onlineUsers", key, value, (err, result) => {
-        //                 if (err) {
-        //                     console.log(`some error occurred`)
-        //                 } else {
-        //                     // getting online users list.
+                    let setUserOnline = redisLib.setANewOnlineUserInHash("onlineUsers", key, value, (err, result) => {
+                        if (err) {
+                            console.log(`some error occurred`)
+                        } else {
+                            // getting online users list.
 
-        //                     redisLib.getAllUsersInAHash('onlineUsers', (err, result) => {
-        //                         console.log(`--- inside getAllUsersInAHas function ---`)
-        //                         if (err) {
-        //                             console.log(err)
-        //                         } else {
+                            redisLib.getAllUsersInAHash('onlineUsers', (err, result) => {
+                                console.log(`--- inside getAllUsersInAHas function ---`)
+                                if (err) {
+                                    console.log(err)
+                                } else {
 
-        //                             console.log(`${fullName} is online`);
+                                    console.log(`${fullName} is online`);
         //                             // setting room name
-        //                             socket.room = 'edChat'
+        //                             socket.room = 'meeting'
         //                             // joining chat-group room.
         //                             socket.join(socket.room)
         //                             socket.to(socket.room).broadcast.emit('online-user-list', result);
+                                  socket.broadcast.emit('online-user-list', result);
 
 
-        //                         }
-        //                     })
-        //                 }
-        //             })
+                                }
+                            })
+                        }
+                    })
 
 
 
@@ -85,12 +86,12 @@ let setServer = (server) => {
 
 
 
-        //         }
+                }
 
 
-        //     })
+            })
 
-        // }) // end of listening set-user event
+        }) // end of listening set-user event
 
         socket.emit('sendUserId','hi');
 
@@ -130,6 +131,20 @@ let setServer = (server) => {
             console.log("user is disconnected");
             console.log(socket.userId);
             // console.log(socket.connectorName);
+
+            if (socket.userId) {
+                redisLib.deleteUserFromHash('onlineUsersListLetsMeet', socket.userId)
+                redisLib.getAllUsersInAHash('onlineUsersListLetsMeet', (err, result) => {
+                    if (err) {
+                        console.log(err)
+                    } else {
+                        //socket.to(socket.room).broadcast.emit('online-user-list', result);
+                        socket.broadcast.emit('online-user-list', result);
+                    }
+                })
+            }
+
+            //using array
             for(let each of arr){
                 if(each.socketid == socket.id){
                     let index = arr.indexOf(each)
@@ -162,6 +177,12 @@ let setServer = (server) => {
 
         }) // end of event deleted
 
+//updates notification
+        socket.on('notify-updates', (data) => {
+            console.log("socket notify-updates called")
+            console.log(data);
+            socket.broadcast.emit(data.userId, data);
+        });
 
         // var removeIndex = allOnlineUsers.map(function (user) { return user.userId; }).indexOf(socket.userId);
         // allOnlineUsers.splice(removeIndex, 1)
